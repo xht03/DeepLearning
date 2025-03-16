@@ -21,49 +21,6 @@ $$
 \end{aligned}
 $$
 
-我们又以隐藏层为例，展开来：
-
-$$
-\begin{bmatrix}
-h_1 \\ h_2 \\ h_3 \\ h_4 \\ h_5
-\end{bmatrix}
-=
-\phi\left(
-\begin{bmatrix}
-w_{11} & w_{12} & w_{13} \\
-w_{21} & w_{22} & w_{23} \\
-w_{31} & w_{32} & w_{33} \\
-w_{41} & w_{42} & w_{43} \\
-w_{51} & w_{52} & w_{53}
-\end{bmatrix}
-\begin{bmatrix}
-x_1 \\ x_2 \\ x_3
-\end{bmatrix}
-+
-\begin{bmatrix}
-b_1 \\ b_2 \\ b_3 \\ b_4 \\ b_5
-\end{bmatrix}
-\right)
-$$
-
-也即：
-
-$$
-\begin{bmatrix}
-h_1 \\ h_2 \\ h_3 \\ h_4 \\ h_5
-\end{bmatrix}
-=
-\phi\left(
-\begin{bmatrix}
-w_{11} x_1 + w_{12} x_2 + w_{13} x_3 + b_1 \\
-w_{21} x_1 + w_{22} x_2 + w_{23} x_3 + b_2 \\
-w_{31} x_1 + w_{32} x_2 + w_{33} x_3 + b_3 \\
-w_{41} x_1 + w_{42} x_2 + w_{43} x_3 + b_4 \\
-w_{51} x_1 + w_{52} x_2 + w_{53} x_3 + b_5
-\end{bmatrix}
-\right)
-$$
-
 其中 $\phi(x)$ 是**非线性激活函数**（如 ReLU、Sigmoid 或 Tanh），作用在每个元素上。
 
 ---
