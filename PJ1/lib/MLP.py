@@ -27,7 +27,7 @@ def single_forward(x, w, b, activation="sigmoid"):
     if activation == "id":
         activation_func = id
     elif activation == "sigmoid":
-        activation_func = sigmod
+        activation_func = sigmoid
     elif activation == "relu":
         activation_func = relu
     elif activation == "softmax":
@@ -79,6 +79,7 @@ def single_backward(d, w, b, o, z, i, activation="sigmoid"):
         derivative_func = softmax_derivative
     else:
         raise Exception("Non-supported activation function")
+
 
     dz = d * derivative_func(z)
     dw = 1 / m * np.dot(dz, i.T)

@@ -8,12 +8,12 @@ def id(x):
 def id_derivative(x):
     return 1
 
-def sigmod(x):
+def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 
 def sigmoid_derivative(x):
-    return sigmod(x) * (1 - sigmod(x))
+    return sigmoid(x) * (1 - sigmoid(x))
 
 def relu(x):
     return np.maximum(0, x)
