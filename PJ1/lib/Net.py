@@ -1,33 +1,120 @@
 import numpy as np
 import os
+import json
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 from lib.Func import *
 
 
-# architecture = [
-#     {"module": Flatten},
-#     {"module": Mlp, "param": {"in_features": 784, "out_features": 256}},
-#     {"module": Gelu},
-#     {"module": Dropout, "param": {"p": 0.2}},
-#     {"module": Mlp, "param": {"in_features": 256, "out_features": 64}},
-#     {"module": Gelu},
-#     {"module": Dropout, "param": {"p": 0.2}},
-#     {"module": Mlp, "param": {"in_features": 64, "out_features": 16}},
-#     {"module": Gelu},
-#     {"module": Dropout, "param": {"p": 0.2}},
-#     {"module": Mlp, "param": {"in_features": 16, "out_features": 10}},
-#     {"module": Softmax},
-# ]
-
 
 class Net:
-    def __self__(self, architecture):
+    def __init__(self, architecture):
         self.architecture = architecture
         self.net = []
         for layer in architecture:
             self.net.append(layer["module"](**layer.get("params", {})))
 
-    # def save(self, path):
+
+    def save_params(self, filepath):
+        params_dict = {}
+        
+        for i, layer in enumerate(self.net):
+            if hasattr(layer, 'get_params'):
+                # Get parameters
+                params = layer.get_params()
+                # Convert numpy arrays to lists for JSON serialization
+                if isinstance(params, tuple):
+                    params_dict[str(i)] = [param.tolist() if isinstance(param, np.ndarray) else param for param in params]
+                else:
+                    params_dict[str(i)] = params.tolist() if isinstance(params, np.ndarray) else params
+        
+        # 创建目录
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        
+        # 保存参数到 JSON 文件
+        with open(filepath, 'w') as f:
+            json.dump(params_dict, f)
+        
+        print(f"Model parameters saved to {filepath}")
+
+
+    def load_params(self, filepath):
+        # 从 JSON 文件加载参数
+        with open(filepath, 'r') as f:
+            params_dict = json.load(f)
+        
+        # 设置参数
+        for i_str, params in params_dict.items():
+            i = int(i_str)
+            if i < len(self.net) and hasattr(self.net[i], 'get_params'):
+                if isinstance(self.net[i], Mlp):
+                    # Convert lists back to numpy arrays
+                    W = np.array(params[0])
+                    b = np.array(params[1])
+                    self.net[i].W, self.net[i].b = W, b
+                elif isinstance(self.net[i], Conv2d):
+                    # Convert lists back to numpy arrays
+                    W = np.array(params[0])
+                    b = np.array(params[1])
+                    self.net[i].W, self.net[i].b = W, b
+        
+        print(f"Model parameters loaded from {filepath}")
+    
+
+    # X: (batch_size, input_dim)
+    def forward(self, X):
+        for layer in self.net:
+            X = layer.forward(X)
+        return X
+    
+    def backward(self, dL, lr):
+        for layer in reversed(self.net):
+            dL = layer.backward(dL, lr)
+
+    def train(self, X, Y, epochs, batch_size, lr, lossfunc="cross_entropy"):
+        # 损失函数
+        if lossfunc == "cross_entropy":
+            self.loss = cross_entropy_loss
+            self.loss_derivative = cross_entropy_derivative
+        elif lossfunc == "square":
+            self.loss = square_loss
+            self.loss_derivative = square_derivative
+        else:
+            raise Exception("Non-supported loss function")
+        
+        loss_history = []   # 记录每个batch的损失函数
+        
+        # 训练
+        batch_count = 0
+        for epoch in tqdm(range(epochs), desc="Training Progress"):
+            x, y = shuffle(X, Y)  # 每个 epoch 随机打乱数据
+            
+            for i in tqdm(range(0, len(x), batch_size), desc="Batch Progress", leave=False):
+                x_batch = x[i : i + batch_size]
+                y_batch = y[i : i + batch_size]
+
+                # 前向传播
+                y_hat = self.forward(x_batch)
+
+                # 计算损失函数
+                loss = np.mean(self.loss(y_batch, y_hat))
+                loss_history.append(loss)
+                batch_count += 1
+
+                # 反向传播
+                dL = self.loss_derivative(y_batch, y_hat)
+                self.backward(dL, lr)
+        
+        print("Training done.")
+        
+        # 绘制损失曲线（按batch）
+        plt.figure(figsize=(10, 6))
+        plt.plot(loss_history)
+        plt.title("Training Loss per Batch")
+        plt.xlabel("Batch")
+        plt.ylabel("Loss")
+        plt.grid(True)
+        plt.show()
 
 
 class Mlp:
@@ -44,7 +131,7 @@ class Mlp:
             self.b = b
         else:
             self.W = np.random.randn(output_dim, input_dim) * 0.01
-            self.b = np.random.randn(output_dim, 1) * 0.01
+            self.b = np.random.randn(output_dim) * 0.01
 
         if activation == "id":
             self.activation = id
@@ -58,6 +145,9 @@ class Mlp:
         elif activation == "softmax":
             self.activation = softmax
             self.derivative = softmax_derivative
+        elif activation == "gelu":
+            self.activation = gelu
+            self.derivative = gelu_derivative
         else:
             raise Exception("Non-supported activation function")
 
@@ -89,7 +179,7 @@ class Mlp:
         m = self.X.shape[0]  # 样本数
         dZ = dL * self.derivative(self.Z)
         dW = np.dot(dZ.T, self.X) / m
-        db = np.sum(dZ, axis=0, keepdims=True) / m
+        db = np.sum(dZ, axis=0) / m
         dX = np.dot(dZ, self.W)
 
         self.W -= lr * dW
@@ -115,7 +205,7 @@ class Dropout:
         return self.O
         
 
-    def backward(self, dL):
+    def backward(self, dL, lr):
         return dL * self.mask / (1 - self.p)
 
 

@@ -14,11 +14,15 @@ architecture_2 = [
 ]
 
 
-# 读取并预处理数据
+# 读取并预处理图形数据数据
 def preprocessData(datapath, labelpath):
     # 读取数据
     data = idx2numpy.convert_from_file(datapath)
     labels = idx2numpy.convert_from_file(labelpath)
+
+    print("Data shape:" + str(data.shape))
+    print("Labels shape:" + str(labels.shape))
+
     # 转换为列向量
     data = data.reshape(data.shape[0], -1).T
     labels = labels.reshape(1, labels.shape[0])
