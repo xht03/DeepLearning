@@ -63,13 +63,23 @@ class Net:
 
     # X: (batch_size, input_dim)
     def forward(self, X):
+        # print("Forward pass:")
         for layer in self.net:
             X = layer.forward(X)
+            # print(f"Layer: {layer.__class__.__name__}, Output: {X}")
+            # print("Weights: ", layer.W if hasattr(layer, 'W') else None)
+            # print("Bias: ", layer.b if hasattr(layer, 'b') else None)
+            # print("-" * 50)
         return X
     
     def backward(self, dL, lr):
+        # print("Backward pass:")
         for layer in reversed(self.net):
             dL = layer.backward(dL, lr)
+            # print(f"Layer: {layer.__class__.__name__}, dL: {dL}")
+            # print("Weights: ", layer.W if hasattr(layer, 'W') else None)
+            # print("Bias: ", layer.b if hasattr(layer, 'b') else None)
+            # print("-" * 50)
 
     def train(self, X, Y, epochs, batch_size, lr, lossfunc="cross_entropy"):
         # 损失函数
@@ -103,6 +113,13 @@ class Net:
 
                 # 反向传播
                 dL = self.loss_derivative(y_batch, y_hat)
+
+                # print("LOSS FUNCTION:")
+                # print(f"Batch {batch_count}, Loss: {loss}")
+                # print(f"y_batch: {y_batch}")
+                # print(f"y_hat: {y_hat}")
+                # print(f"Batch {batch_count}, dL: {dL}")
+                # print("-" * 50)
                 self.backward(dL, lr)
         
         print("Training done.")
@@ -185,6 +202,10 @@ class Mlp:
         self.W -= lr * dW
         self.b -= lr * db
 
+        # print(f"Layer: {self.__class__.__name__}, dW: {dW}, db: {db}")
+        # print(f"Layer: {self.__class__.__name__}, X: {self.X}, Z: {self.Z}, O: {self.O}")
+        # print("-" * 50)
+
         return dX
     
 
@@ -207,6 +228,10 @@ class Dropout:
 
     def backward(self, dL, lr):
         return dL * self.mask / (1 - self.p)
+    
+        # print(f"Layer: {self.__class__.__name__}, dL: {dL}, mask: {self.mask}")
+        # print(f"Layer: {self.__class__.__name__}, X: {self.X}, O: {self.O}")
+        # print("-" * 50)
 
 
 class Flatten:
@@ -227,6 +252,10 @@ class Flatten:
         # Reshape dL back to the original shape
         dX = dL.reshape(self.shape)
         return dX
+    
+        # print(f"Layer: {self.__class__.__name__}, dL: {dL}")
+        # print(f"Layer: {self.__class__.__name__}, X: {self.X}, O: {self.O}")
+        # print("-" * 50)
 
 
 class Conv2d:
@@ -350,6 +379,10 @@ class Conv2d:
         self.W -= lr * dW
         self.b -= lr * db
 
+        # print(f"Layer: {self.__class__.__name__}, dW: {dW}, db: {db}")
+        # print(f"Layer: {self.__class__.__name__}, X: {self.X}, O: {self.O}")
+        # print("-" * 50)
+
         return dX
     
 
@@ -437,4 +470,6 @@ class MaxPool2d:
         else:
             dX = dX_padded
         
+        # print(f"Layer: {self.__class__.__name__}, X: {self.X}, O: {self.O}")
+        # print("-" * 50)
         return dX

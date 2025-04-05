@@ -32,7 +32,7 @@ def MNIST():
 
     # 训练
     print("Start training...")
-    net.train(data, one_hot_labels, epochs=15, batch_size=100, lr=0.01, lossfunc="cross_entropy")
+    net.train(data, one_hot_labels, epochs=50, batch_size=100, lr=0.01, lossfunc="cross_entropy")
     print("Training done.")
     print("-" * 50)
 

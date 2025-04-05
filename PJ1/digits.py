@@ -87,8 +87,10 @@ def digitRecognition():
                 break
         
         # 绘制损失曲线
+
         loss_history = np.array(loss_history)
-        loss_history = np.mean(loss_history, axis=(1,2))
+        if loss_history.ndim > 1:
+            loss_history = np.mean(loss_history, axis=tuple(range(1, loss_history.ndim)))
         plt.plot(loss_history)
         plt.xlabel("Epoch")
         plt.ylabel("Loss")

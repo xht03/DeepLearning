@@ -30,6 +30,10 @@ def MNIST():
     label = idx2numpy.convert_from_file(labelpath)
     one_hot_labels = one_hot(label, 10)
 
+    # 只取一个数据用于调试
+    # data = data[:1]
+    # one_hot_labels = one_hot_labels[:1]
+
 
     net = Net(architecture)
 
