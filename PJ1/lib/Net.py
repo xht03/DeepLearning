@@ -201,12 +201,10 @@ class Flatten:
 
 
 class Conv2d:
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, W=None, b=None):
+    def __init__(self, in_channels, out_channels, kernel_size, W=None, b=None, activation="relu"):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = kernel_size
-        self.stride = stride
-        self.padding = padding
 
         if W is not None:
             self.W = W
@@ -215,6 +213,24 @@ class Conv2d:
             self.W = np.random.randn(out_channels, in_channels, kernel_size, kernel_size) * 0.01
             self.b = np.random.randn(out_channels) * 0.01
 
+        if activation == "id":
+            self.activation = id
+            self.derivative = id_derivative
+        elif activation == "sigmoid":
+            self.activation = sigmoid
+            self.derivative = sigmoid_derivative
+        elif activation == "relu":
+            self.activation = relu
+            self.derivative = relu_derivative
+        elif activation == "softmax":
+            self.activation = softmax
+            self.derivative = softmax_derivative
+        elif activation == "gelu":
+            self.activation = gelu
+            self.derivative = gelu_derivative
+        else:
+            raise Exception("Non-supported activation function")
+
     # O = conv(X, W) + b
     # X: (batch_size, in_channels, height, width)
     # W: (out_channels, in_channels, kernel_size, kernel_size)
@@ -222,94 +238,70 @@ class Conv2d:
     # O: (batch_size, out_channels, height_out, width_out)
     # height_out = (height - kernel_size + 2 * padding) / stride + 1
     # width_out = (width - kernel_size + 2 * padding) / stride + 1
-    def forward(self, X):
+    def forward_without_activation(self, X):
         batch_size, in_channels, height, width = X.shape
 
         # 计算 O 的高度和宽度
-        height_out = (height - self.kernel_size + 2 * self.padding) // self.stride + 1
-        width_out = (width - self.kernel_size + 2 * self.padding) // self.stride + 1
+        height_out = height - self.kernel_size + 1
+        width_out = width - self.kernel_size + 1
 
-        # 填入 padding
-        # 填入 padding
-        if self.padding > 0:
-            X_padded = np.zeros((batch_size, in_channels, height + 2 * self.padding, width + 2 * self.padding))
-            X_padded[:, :, self.padding:self.padding + height, self.padding:self.padding + width] = X
-        else:
-            X_padded = X
-
-        # 初始化输出矩阵 O
-        O = np.zeros((batch_size, self.out_channels, height_out, width_out))
+        # 初始化输出矩阵 Z
+        Z = np.zeros((batch_size, self.out_channels, height_out, width_out))
 
         # 计算卷积
         # O = conv(X, W) + b
         for h in range(height_out):
             for w in range(width_out):
-                # 计算 X_padded 对应的区域
-                h_start = h * self.stride
-                h_end = h_start + self.kernel_size
-                w_start = w * self.stride
-                w_end = w_start + self.kernel_size
-                X_region = X_padded[:, :, h_start:h_end, w_start:w_end]
-
-                # 卷积操作
+                X_region = X[:, :, h : h + self.kernel_size, w : w + self.kernel_size]
                 for k in range(self.out_channels):
-                    O[:, k, h, w] = np.sum(X_region * self.W[k], axis=(1, 2, 3))
+                    Z[:, k, h, w] = np.sum(X_region * self.W[k], axis=(1, 2, 3))
 
-        return O + self.b[np.newaxis, :, np.newaxis, np.newaxis]
+        Z += self.b[np.newaxis, :, np.newaxis, np.newaxis]
+        return Z
+
+    def forward(self, X):
+        Z = self.forward_without_activation(X)
+        O = self.activation(Z)
+        return O
 
     # O = conv(X, W) + b
     # dL = dL/dO                    (batch_size, out_channels, height_out, width_out)
-    # dW = dL/dW = conv(X, dL)      (out_channels, in_channels, kernel_size, kernel_size)
-    # db = dL/db = sum(dL)          (out_channels)
-    # dX = dL/dX = conv(dL^p, W^r)  (batch_size, in_channels, height, width)
+    # dZ = dL/dZ = dL/dO * dO/dZ    (batch_size, out_channels, height_out, width_out)
+    # dW = dL/dW = conv(X, dZ)      (out_channels, in_channels, kernel_size, kernel_size)
+    # db = dL/db = sum(dZ)          (out_channels)
+    # dX = dL/dX = conv(dZ^p, W^r)  (batch_size, in_channels, height, width)
     def backward(self, X, dL, lr):
-
-        X = X.astype(np.float64)
-        dL = dL.astype(np.float64)
-
         batch_size, in_channels, height, width = X.shape
         assert in_channels == self.in_channels
 
-        # 填入 padding
-        if self.padding > 0:
-            X_padded = np.zeros((batch_size, in_channels, height + 2 * self.padding, width + 2 * self.padding))
-            X_padded[:, :, self.padding : self.padding + height, self.padding : self.padding + width] = X
-        else:
-            X_padded = X
-        
-        dX_padded = np.zeros_like(X_padded)
-        dX = np.zeros_like(X)
+        height_out = height - self.kernel_size + 1
+        width_out = width - self.kernel_size + 1
 
         # --------------------------------------
-        dW = np.zeros_like(self.W)
+        Z = self.forward_without_activation(X)
+        dZ = self.derivative(Z, dL)
+        
+        # --------------------------------------
+        dW = np.zeros(self.W.shape)
 
-        for i in range(batch_size):
-            for j in range(self.out_channels):
-                for h in range(dL.shape[2]):
-                    for w in range(dL.shape[3]):
-                        # 计算 X_padded 对应的区域
-                        h_start = h * self.stride
-                        w_start = w * self.stride
-                        # (in_channels, kernel_size, kernel_size) = (in_channels, kernel_size, kernel_size) * scalar
-                        dW[j] += X_padded[i, :, h_start : h_start + self.kernel_size, w_start : w_start + self.kernel_size] * dL[i, j, h, w]
+        for h in range(self.kernel_size):
+            for w in range(self.kernel_size):
+                X_region = X[:, :, h : h + height_out, w : w + width_out]
+                for k in range(self.out_channels):
+                    dW[k, :, h, w] = np.sum(X_region * dZ[:, k][:, np.newaxis], axis=(0, 2, 3)) /batch_size
+        # ---------------------------------------
+        db = np.sum(dZ, axis=(0, 2, 3)) / batch_size
 
         # ---------------------------------------
-        db = np.sum(dL, axis=(0, 2, 3)) / batch_size
+        dZ_p = np.pad(dZ, ((0, 0), (0, 0), (self.kernel_size - 1, self.kernel_size - 1), (self.kernel_size - 1, self.kernel_size - 1)))
+        W_r = np.flip(self.W, axis=(2, 3))
 
-        # ---------------------------------------
-        for i in range(batch_size):
-            for j in range(self.out_channels):
-                for h in range(dL.shape[2]):
-                    for w in range(dL.shape[3]):
-                        h_start = h * self.stride
-                        w_start = w * self.stride
-                        dX_padded[i, :, h_start : h_start + self.kernel_size, w_start : w_start + self.kernel_size] += self.W[j] * dL[i, j, h, w]
-
-        # 提取 dX
-        if self.padding > 0:
-            dX = dX_padded[:, :, self.padding : self.padding + X.shape[2], self.padding : self.padding + X.shape[3]]
-        else:
-            dX = dX_padded
+        dX = np.zeros(X.shape)
+        for h in range(height):
+            for w in range(width):
+                dZ_region = dZ_p[:, :, h : h + self.kernel_size, w : w + self.kernel_size]
+                for k in range(self.in_channels):
+                    dX[:, k, h, w] = np.sum(dZ_region * W_r[:, k], axis=(1, 2, 3))
 
         # --------------------------------------
         self.W -= lr * dW
@@ -321,8 +313,6 @@ class Conv2d:
 class MaxPool2d:
     def __init__(self, kernel_size, stride=1, padding=0):
         self.kernel_size = kernel_size
-        self.stride = stride
-        self.padding = padding
 
     # X: (batch_size, channels, height, width)
     def forward(self, X):
