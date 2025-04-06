@@ -63,23 +63,13 @@ class Net:
 
     # X: (batch_size, input_dim)
     def forward(self, X):
-        # print("Forward pass:")
         for layer in self.net:
             X = layer.forward(X)
-            # print(f"Layer: {layer.__class__.__name__}, Output: {X}")
-            # print("Weights: ", layer.W if hasattr(layer, 'W') else None)
-            # print("Bias: ", layer.b if hasattr(layer, 'b') else None)
-            # print("-" * 50)
         return X
     
     def backward(self, dL, lr):
-        # print("Backward pass:")
         for layer in reversed(self.net):
             dL = layer.backward(dL, lr)
-            # print(f"Layer: {layer.__class__.__name__}, dL: {dL}")
-            # print("Weights: ", layer.W if hasattr(layer, 'W') else None)
-            # print("Bias: ", layer.b if hasattr(layer, 'b') else None)
-            # print("-" * 50)
 
     def train(self, X, Y, epochs, batch_size, lr, lossfunc="cross_entropy"):
         # 损失函数
@@ -107,19 +97,17 @@ class Net:
                 y_hat = self.forward(x_batch)
 
                 # 计算损失函数
-                loss = np.mean(self.loss(y_batch, y_hat))
+                loss = self.loss(y_batch, y_hat)
                 loss_history.append(loss)
                 batch_count += 1
 
                 # 反向传播
                 dL = self.loss_derivative(y_batch, y_hat)
 
-                # print("LOSS FUNCTION:")
-                # print(f"Batch {batch_count}, Loss: {loss}")
-                # print(f"y_batch: {y_batch}")
-                # print(f"y_hat: {y_hat}")
-                # print(f"Batch {batch_count}, dL: {dL}")
-                # print("-" * 50)
+                print(f"Batch {batch_count}: Loss = {loss:.4f}")
+                print(f"Batch {batch_count}: dL = {dL}")
+                print("-" * 50)
+                
                 self.backward(dL, lr)
         
         print("Training done.")
@@ -132,6 +120,11 @@ class Net:
         plt.ylabel("Loss")
         plt.grid(True)
         plt.show()
+
+        # 打印损失函数记录
+        # print("Loss history:")
+        # for i, loss in enumerate(loss_history):
+        #     print(f"Batch {i + 1}: {loss:.4f}")
 
 
 class Mlp:

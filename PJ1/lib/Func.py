@@ -3,41 +3,39 @@ import matplotlib.pyplot as plt
 import idx2numpy
 
 # 激活函数及其导数
-def id(x):
-    return x
+def id(X):
+    return X
 
-def id_derivative(x):
+def id_derivative(X):
     return 1
 
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
+def sigmoid(X):
+    return 1 / (1 + np.exp(-X))
 
 
-def sigmoid_derivative(x):
-    return sigmoid(x) * (1 - sigmoid(x))
+def sigmoid_derivative(X):
+    return sigmoid(X) * (1 - sigmoid(X))
 
-def relu(x):
-    return np.maximum(0, x)
+def relu(X):
+    return np.maximum(0, X)
 
-def relu_derivative(x):
-    return np.where(x > 0, 1, 0)
+def relu_derivative(X):
+    return np.where(X > 0, 1, 0)
 
-def softmax(x):
-    e_x = np.exp(x - np.max(x))
-    e_x_sum = e_x.sum(axis=0)
-    e_x_sum = np.where(e_x_sum == 0, 1e-12, e_x_sum)    # 防止溢出
-    return e_x / e_x_sum
+def softmax(X):
+    exp_X = np.exp(X - np.max(X, axis=-1, keepdims=True))
+    return exp_X / np.sum(exp_X, axis=-1, keepdims=True)
 
-def softmax_derivative(x):
-    return softmax(x) * (1 - softmax(x))
+def softmax_derivative(X):
+    return softmax(X) * (1 - softmax(X))
 
-def gelu(x):
-    return 0.5 * x * (1 + np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * x ** 3)))
+def gelu(X):
+    return 0.5 * X * (1 + np.tanh(np.sqrt(2 / np.pi) * (X + 0.044715 * X**3)))
 
-def gelu_derivative(x):
-    return 0.5 * (1 + np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * x ** 3))) + \
-           0.5 * x * (1 - np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * x ** 3)) ** 2) * \
-           (np.sqrt(2 / np.pi) * (1 + 3 * 0.044715 * x ** 2))
+def gelu_derivative(X):
+    return 0.5 * (1 + np.tanh(np.sqrt(2 / np.pi) * (X + 0.044715 * X ** 3))) + \
+           0.5 * X * (1 - np.tanh(np.sqrt(2 / np.pi) * (X + 0.044715 * X ** 3)) ** 2) * \
+           (np.sqrt(2 / np.pi) * (1 + 3 * 0.044715 * X ** 2))
 
 # --------------------------
 
@@ -49,19 +47,18 @@ def square_derivative(y_true, y_pred):
     return y_pred - y_true
 
 
+# y_true: (batch_size, num_classes)
 def cross_entropy_loss(y_true, y_pred):
     # 防止 y_pred 中出现 0 或 1
-    epsilon = 1e-12
+    epsilon = 1e-2
     y_pred = np.clip(y_pred, epsilon, 1 - epsilon)
-    m = y_pred.shape[0]  # 样本数
-    loss = -np.sum(y_true * np.log(y_pred)) / m
-    return np.squeeze(loss)
+    return -np.sum(y_true * np.log(y_pred)) / y_true.shape[0]
 
 def cross_entropy_derivative(y_true, y_pred):
     # 防止 y_pred 中出现 0 或 1
-    epsilon = 1e-12
+    epsilon = 1e-2
     y_pred = np.clip(y_pred, epsilon, 1 - epsilon)
-    return -y_true / y_pred
+    return (-y_true / y_pred) / y_true.shape[0]
 
 # --------------------------
 

@@ -32,12 +32,12 @@ def MNIST():
 
     # 训练
     print("Start training...")
-    net.train(data, one_hot_labels, epochs=50, batch_size=100, lr=0.01, lossfunc="cross_entropy")
+    net.train(data, one_hot_labels, epochs=1, batch_size=1, lr=0.01, lossfunc="cross_entropy")
     print("Training done.")
     print("-" * 50)
 
     # 导出模型参数
-    net.save_params(modelpath)
+    # net.save_params(modelpath)
 
     # 计算训练集准确率
     y_hat = net.forward(data)
