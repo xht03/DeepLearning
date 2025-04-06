@@ -73,9 +73,6 @@ def one_hot(labels, num_classes):
     return one_hot_labels
 
 def shuffle(x, y):
-    # 获取第一维的大小
-    n_samples = x.shape[0]
-    # 生成第一维的随机排列
-    indices = np.random.permutation(n_samples)
-    # 使用高级索引打乱第一维
+    np.random.seed(0)
+    indices = np.random.permutation(len(x))
     return x[indices], y[indices]
