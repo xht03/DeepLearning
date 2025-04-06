@@ -85,7 +85,7 @@ class Net:
             raise Exception("Non-supported loss function")
         
         # 训练
-        for i in tqdm(range(0, len(X), batch_size)):
+        for i in range(0, len(X), batch_size):
             X_batch = X[i:i + batch_size]
             Y_batch = Y[i:i + batch_size]
 
@@ -94,7 +94,6 @@ class Net:
 
             # 计算损失
             y_hat = outputs[-1]
-            loss = self.loss(Y_batch, y_hat)
             
             # 反向传播
             dL = self.loss_derivative(Y_batch, y_hat)
@@ -163,7 +162,7 @@ class Mlp:
         assert dL.shape == (batch_size, self.output_dim)
 
         Z = np.dot(X, self.W.T) + self.b
-        dZ = dL * self.derivative(Z)
+        dZ = self.derivative(Z, dL)
         dW = np.dot(dZ.T, X) / batch_size
         db = np.sum(dZ, axis=0) / batch_size
         dX = np.dot(dZ, self.W)
@@ -188,8 +187,8 @@ class Dropout:
     
 
 class Flatten:
-    # X: (batch_size, height, width)
-    # O: (batch_size, height * width)
+    # X: (batch_size, channels, height, width)
+    # O: (batch_size, channels * height * width)
     def forward(self, X):
         self.shape = X.shape
         return X.reshape(X.shape[0], -1)

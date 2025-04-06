@@ -8,9 +8,9 @@ import os
 
 
 architecture_1 = [
-    {"module": Mlp, "params": {"input_dim": 1, "output_dim": 32, "activation": "sigmoid"}},
-    {"module": Mlp, "params": {"input_dim": 32, "output_dim": 32, "activation": "sigmoid"}},
-    {"module": Mlp, "params": {"input_dim": 32, "output_dim": 1, "activation": "id"}},
+    {"module": Mlp, "params": {"input_dim": 1, "output_dim": 4, "activation": "sigmoid"}},
+    {"module": Mlp, "params": {"input_dim": 4, "output_dim": 4, "activation": "sigmoid"}},
+    {"module": Mlp, "params": {"input_dim": 4, "output_dim": 1, "activation": "id"}},
 ]
 
 architecture_2 = [
@@ -39,10 +39,14 @@ def sinFit():
     # 训练
     print("Start training...")
 
-    epochs = 200
+    epochs = 2000
     for i in range(epochs):
         x,y = shuffle(x, y)
-        net.train(x, y, batch_size=100, lr=0.005, lossfunc="square")
+        net.train(x, y, batch_size=10, lr=0.08, lossfunc="square")
+
+        y_hat = net.predict(x)
+        loss = net.loss(y, y_hat)
+        print(f"Epoch {i + 1}/{epochs}, Loss: {loss:.4f}")
     
     print("Training done.")
     print("-" * 50)
@@ -100,7 +104,6 @@ def MNIST():
         y_hat = np.argmax(y_hat, axis=1)    # (60000, 10) -> (60000,)
         accuracy = np.mean(y_hat == label)
         print(f"Loss: {loss:.4f}, Accuracy: {accuracy:.4f}")
-        print("-" * 50)
 
     print("Training done.")
     print("-" * 50)
@@ -132,4 +135,4 @@ def MNIST():
 
 
 if __name__ == "__main__":
-    sinFit()
+    MNIST()
