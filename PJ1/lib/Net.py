@@ -98,6 +98,8 @@ class Net:
             # 反向传播
             dL = self.loss_derivative(Y_batch, y_hat)
             self.backward(outputs, dL, lr)
+
+            print(f"Batch {i // batch_size + 1}/{len(X) // batch_size}, Loss: {self.loss(Y_batch, y_hat):.4f}")
         
     def predict(self, X):
         for layer in self.net:
@@ -227,35 +229,33 @@ class Conv2d:
         height_out = (height - self.kernel_size + 2 * self.padding) // self.stride + 1
         width_out = (width - self.kernel_size + 2 * self.padding) // self.stride + 1
 
-        # 初始化输出矩阵 O
-        O = np.zeros((batch_size, self.out_channels, height_out, width_out))
-
+        # 填入 padding
         # 填入 padding
         if self.padding > 0:
             X_padded = np.zeros((batch_size, in_channels, height + 2 * self.padding, width + 2 * self.padding))
-            X_padded[:, :, self.padding : self.padding + height, self.padding : self.padding + width] = X
+            X_padded[:, :, self.padding:self.padding + height, self.padding:self.padding + width] = X
         else:
             X_padded = X
 
+        # 初始化输出矩阵 O
+        O = np.zeros((batch_size, self.out_channels, height_out, width_out))
+
         # 计算卷积
-        for i in range(batch_size):
-            for j in range(self.out_channels):
-                for h in range(height_out):
-                    for w in range(width_out):
-                        # 计算 X 对应的区域
-                        h_start = h * self.stride
-                        h_end = h_start + self.kernel_size
-                        w_start = w * self.stride
-                        w_end = w_start + self.kernel_size
+        # O = conv(X, W) + b
+        for h in range(height_out):
+            for w in range(width_out):
+                # 计算 X_padded 对应的区域
+                h_start = h * self.stride
+                h_end = h_start + self.kernel_size
+                w_start = w * self.stride
+                w_end = w_start + self.kernel_size
+                X_region = X_padded[:, :, h_start:h_end, w_start:w_end]
 
-                        # 提取 X 对应的区域
-                        region = X_padded[i, :, h_start:h_end, w_start:w_end]
+                # 卷积操作
+                for k in range(self.out_channels):
+                    O[:, k, h, w] = np.sum(X_region * self.W[k], axis=(1, 2, 3))
 
-                        # region: (in_channels, kernel_size, kernel_size)
-                        # W[j]:   (in_channels, kernel_size, kernel_size)
-                        O[i, j, h, w] = np.sum(region * self.W[j]) + self.b[j]
-
-        return O
+        return O + self.b[np.newaxis, :, np.newaxis, np.newaxis]
 
     # O = conv(X, W) + b
     # dL = dL/dO                    (batch_size, out_channels, height_out, width_out)
@@ -263,6 +263,10 @@ class Conv2d:
     # db = dL/db = sum(dL)          (out_channels)
     # dX = dL/dX = conv(dL^p, W^r)  (batch_size, in_channels, height, width)
     def backward(self, X, dL, lr):
+
+        X = X.astype(np.float64)
+        dL = dL.astype(np.float64)
+
         batch_size, in_channels, height, width = X.shape
         assert in_channels == self.in_channels
 
