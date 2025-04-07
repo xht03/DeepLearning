@@ -12,7 +12,7 @@
 
 - task*: 不同实验任务的代码
 
-- test: 测试数据
+- valid: 验证数据
 
 ```bash
 .
@@ -25,7 +25,7 @@
     ├── task1
     ├── task2
     ├── task3
-    └── test
+    └── valid
 ```
 
 ## 组件库

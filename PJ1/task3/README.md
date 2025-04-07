@@ -151,3 +151,11 @@ class ResidualBlock(nn.Module):
         out = nn.ReLU()(out)
         return out
 ```
+
+在加入残差层之后，针对 CIFAR-10 任务，模型的正确率仍旧停留在 87% 左右，无法进一步提升。
+
+为了解决这一问题，我引入了**数据增强**，也就是 `CIFAR_enhance.ipynb` 文件中的内容。
+
+每次训练时，将图片进行随机裁剪（Random Crop），并进行水平翻转（Horizontal Flip）和颜色抖动（Color Jitter）。这样可以增加数据的多样性，提升模型的泛化能力。
+
+引入数据增强后，模型的预测正确率可以提升到 92% 以上。

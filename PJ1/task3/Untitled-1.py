@@ -93,9 +93,45 @@ class CIFAR10(nn.Module):
         return self.net(x)
 
 # %%
-datadir = "../data/CIFAR-10/"
-metapath = "../data/CIFAR-10/batches.meta"
-modelpath = "../model/task3/CIFAR-10.pth"
+# 数据增强
+
+# 训练集
+class trainDataset(Dataset):
+    def __init__(self, data, labels):
+        super().__init__()
+        self.data = data
+        self.labels = labels
+        self.transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+
+    def __getitem__(self, index):
+        return self.transform(self.data[index]), self.labels[index]
+    
+    def __len__(self):
+        return len(self.data)
+    
+# 验证集
+class validDataset(Dataset):
+    def __init__(self, data, labels):
+        super().__init__()
+        self.data = data
+        self.labels = labels
+        self.transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+
+    def __getitem__(self, index):
+        return self.transform(self.data[index]), self.labels[index]
+    
+    def __len__(self):
+        return len(self.data)
 
 # %%
 def unpickle(file):
@@ -108,6 +144,11 @@ def one_hot(labels, num_classes):
     for i in range(len(labels)):
         one_hot_labels[i, labels[i]] = 1
     return one_hot_labels
+
+# %%
+datadir = "../data/CIFAR-10/"
+metapath = "../data/CIFAR-10/batches.meta"
+modelpath = "../model/task3/CIFAR-10.pth"
 
 # %%
 meta = unpickle(metapath)
@@ -155,46 +196,6 @@ for i in range(16):
 plt.show()
 
 # %%
-# 数据增强
-
-# 训练集
-class trainDataset(Dataset):
-    def __init__(self, data, labels):
-        super().__init__()
-        self.data = data
-        self.labels = labels
-        self.transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.RandomCrop(32, padding=4),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
-
-    def __getitem__(self, index):
-        return self.transform(self.data[index]), self.labels[index]
-    
-    def __len__(self):
-        return len(self.data)
-    
-# 验证集
-class validDataset(Dataset):
-    def __init__(self, data, labels):
-        super().__init__()
-        self.data = data
-        self.labels = labels
-        self.transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
-
-    def __getitem__(self, index):
-        return self.transform(self.data[index]), self.labels[index]
-    
-    def __len__(self):
-        return len(self.data)
-
-# %%
 # 划分训练集和验证集
 split = int(len(data) * 0.8)
 train_data, valid_data = data[:split], data[split:]
@@ -234,7 +235,7 @@ pbar = tqdm(range(epochs), desc="Training")
 for i in pbar:
     model.train()
     running_loss = 0.0
-    test_loss = 0.0
+    valid_loss = 0.0
     accuracy = 0.0
     for x, y in train_loader:
         # 加载进GPU
@@ -261,15 +262,15 @@ for i in pbar:
             pred = model(x)
             # 计算损失
             loss = loss_func(pred, y)
-            test_loss += loss.item()
+            valid_loss += loss.item()
             # 计算准确率
             accuracy += torch.sum(torch.argmax(pred, dim=1) == torch.argmax(y, dim=1)).item()
     
     # 评估
     running_loss /= len(train_loader)
-    test_loss /= len(valid_loader)
+    valid_loss /= len(valid_loader)
     accuracy /= len(valid_dataset)
-    scheduler.step(test_loss)   # 更新学习率
+    scheduler.step(valid_loss)   # 更新学习率
 
     if accuracy > best_accuracy:
         best_accuracy = accuracy
@@ -277,7 +278,7 @@ for i in pbar:
 
     pbar.set_postfix(
         loss=running_loss,
-        test_loss=test_loss,
+        valid_loss=valid_loss,
         accuracy=f"{accuracy*100:.2f}%",
         best_accuracy=f"{best_accuracy*100:.2f}%",
         lr=optimizer.param_groups[0]['lr']
