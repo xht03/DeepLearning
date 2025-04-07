@@ -99,7 +99,7 @@ class Net:
             dL = self.loss_derivative(Y_batch, y_hat)
             self.backward(outputs, dL, lr)
 
-            print(f"Batch {i // batch_size + 1}/{len(X) // batch_size}, Loss: {self.loss(Y_batch, y_hat):.4f}")
+            # print(f"Batch {i // batch_size + 1}/{len(X) // batch_size}, Loss: {self.loss(Y_batch, y_hat):.4f}")
         
     def predict(self, X):
         for layer in self.net:
