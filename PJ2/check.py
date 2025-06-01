@@ -40,4 +40,5 @@ def check(language, gold_path, my_path):
     return
 
 if __name__ == "__main__":
-    check(language = "Chinese", gold_path="example_data/example_gold_result.txt", my_path="example_data/example_my_result.txt")
+    # check(language = "Chinese", gold_path="NER/example_data/example_gold_result.txt", my_path="NER/example_data/example_my_result.txt")
+    check(language = "English", gold_path="NER/English/validation.txt", my_path="hmm_validation_output.txt")
