@@ -1,6 +1,6 @@
-现 M-ORG
-任 M-ORG
-安 M-ORG
+现 O
+任 O
+安 B-ORG
 徽 M-ORG
 新 M-ORG
 华 M-ORG
@@ -13,9 +13,9 @@
 公 M-ORG
 司 E-ORG
 副 B-TITLE
-董 O
-事 O
-长 O
+董 M-TITLE
+事 M-TITLE
+长 E-TITLE
 。 O
 
 1 O
@@ -37,28 +37,28 @@
 就 O
 职 O
 于 O
-长 O
-城 O
-证 O
-券 O
-（ O
-汇 O
-通 O
-） O
-深 O
-圳 O
-二 O
-部 O
+长 B-ORG
+城 M-ORG
+证 M-ORG
+券 M-ORG
+（ M-ORG
+汇 M-ORG
+通 M-ORG
+） M-ORG
+深 M-ORG
+圳 M-ORG
+二 M-ORG
+部 E-ORG
 ， O
-任 B-TITLE
-财 M-TITLE
+任 O
+财 B-TITLE
 务 M-TITLE
-经 O
-理 O
+经 M-TITLE
+理 E-TITLE
 ； O
 
-马 M-TITLE
-先 E-TITLE
+马 S-NAME
+先 O
 生 O
 长 O
 期 O
@@ -88,4 +88,3 @@
 经 O
 验 O
 。 O
-
