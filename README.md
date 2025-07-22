@@ -1,4 +1,4 @@
-## FDU AI(H) 2025
+# FDU AI(H) 2025
 
 This is the lab repo for FDU AI(H) 2025.
 
