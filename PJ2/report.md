@@ -1,4 +1,3 @@
-Collecting workspace informationStill updating workspace index. Falling back to using the latest remote code index only. Response may be less accurate.以下是结合你的代码实现（以 CRF.ipynb 为主）和你的理论部分，撰写的实验报告：
 # PJ2 实验报告
 
 ## 算法原理
